@@ -19,7 +19,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
+                sh "docker build -f infra/Dockerfile -t $REPO_NAME:$IMAGE_TAG ."
             }
         }
 
