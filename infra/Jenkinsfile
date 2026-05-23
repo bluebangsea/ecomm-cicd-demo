@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = "ap-south-1"
+        ACCOUNT_ID = "189265240714"
+        REPO_NAME = "ecom-cicd-demo"
+        IMAGE_TAG = "latest"
+        ECR_URI = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'YOUR_GIT_REPO_URL'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t $REPO_NAME:$IMAGE_TAG ."
+            }
+        }
+
+        stage('Login to ECR') {
+            steps {
+                sh """
+                aws ecr get-login-password --region $AWS_REGION \
+                | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                """
+            }
+        }
+
+        stage('Tag Image') {
+            steps {
+                sh """
+                docker tag $REPO_NAME:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
+                """
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                sh """
+                docker push $ECR_URI:$IMAGE_TAG
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Image pushed to ECR successfully"
+        }
+        failure {
+            echo "Pipeline failed"
+        }
+    }
+}
